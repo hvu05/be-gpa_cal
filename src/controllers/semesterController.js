@@ -1,8 +1,14 @@
-const { createSemesterService, deleteSemesterService, updateSemesterService } = require("../services/semesterSevice")
+const { createSemesterService, 
+        deleteSemesterService, 
+        updateSemesterService,
+        getSemestersByUserIdService
+    } = require("../services/semesterSevice")
 
 const semesterController = {
     createSemesterController: async (req, res) => {
-        const sem = await createSemesterService(req.body.semesterName)
+        const user_id = req.user.id
+        // console.log('id user', user_id)
+        const sem = await createSemesterService(req.body.semesterName, user_id)
         if (sem) {
             return res.status(200).json({
                 EC: 0,
@@ -47,6 +53,24 @@ const semesterController = {
             return res.status(500).json({
                 EC: -1,
                 message: 'Update semester FAILED'
+            })
+        }
+    },
+
+    getSemestersByUserIdController: async (req, res) => {
+        const user_id = req.user.id
+        const semesters = await getSemestersByUserIdService(user_id)
+        if (semesters) {
+            return res.status(200).json({
+                EC: 0,
+                data: semesters,
+                message: 'Get semesters successfully'
+            })
+        }
+        else {
+            return res.status(500).json({
+                EC: -1,
+                message: 'Get semesters FAILED'
             })
         }
     }

@@ -3,20 +3,37 @@ const User = require('../models/User')
 
 const middlewareController = {
   //verifyToken
-  verifyToken: (req, res, next) => {
-    const token = req.headers.token;
+  verifyToken: async (req, res, next) => {
+    const token = req.cookies.accessToken
+    // console.log('token', token)
+    if (!token) {
+      return res.status(401).json("You're not authenticated")
+    }
+    try {
+      const jwtSecret = process.env.JWT_ACCESS_KEY || "your-secret-key-here"
 
-    if (token) {
-      const accessToken = token.split(" ")[1];
-      jwt.verify(accessToken, process.env.JWT_ACCESS_KEY, (err, user) => {
-        if (err) {
-          res.status(403).json("Token is not valid");
-        }
-        req.user = user;
-        next();
-      });
-    } else {
-      res.status(401).json("You're not authenticated");
+      // verify chữ ký + decode
+      const decoded = jwt.verify(token, jwtSecret)
+      // console.log('decoded', decoded)
+      // lấy user trong DB theo id từ token
+      const user = await User.findById(decoded.id)
+      if (!user) {
+        console.log("User not found")
+        return res.status(404).json("User not found")
+      }
+
+      // so sánh tokenVersion
+      if (decoded.tokenVersion !== user.tokenVersion) {
+        console.log('Token compare', decoded.tokenVersion, user.tokenVersion)
+        return res.status(401).json("Token is no longer valid")
+      }
+
+      // nếu hợp lệ => gắn user vào request
+      req.user = decoded
+      next();
+    } catch (err) {
+      console.log("Token is not valid")
+      return res.status(403).json("Token is not valid")
     }
   },
   checkAccountExpiration: async (req, res, next) => {

@@ -7,7 +7,17 @@ const authController = {
             // Tạo salt và hash password
             const salt = await bcrypt.genSalt(10);
             const hashed = await bcrypt.hash(req.body.password, salt);
-            
+
+            const existingUser = await User.findOne({ username: req.body.username });
+            if (existingUser) {
+                return res.status(400).json({ status: 400, message: "Username already exists" });
+            }
+
+            const existingEmail = await User.findOne({ email: req.body.email });
+            if (existingEmail) {
+                return res.status(400).json({ status: 400, message: "Email already exists" });
+            }
+
             // Tạo user mới
             const newUser = new User({
                 username: req.body.username,
@@ -21,12 +31,18 @@ const authController = {
 
             res.status(201).json({ message: "User registered successfully!", user });
         } catch (err) {
+            console.log('>>>err at sign up user', err)
             return res.status(500).json(err);
         }
     },
     loginUser: async (req, res) => {
         try {
-            const user = await User.findOne({ username: req.body.username });
+            const user = await User.findOne({ 
+                $or: [
+                    {username: req.body.usernameOrEmail},
+                    {email: req.body.usernameOrEmail}
+                ]
+             });
             if (!user) {
                 return res.status(404).json("Wrong username!");
             }
@@ -46,23 +62,40 @@ const authController = {
             }
 
             if (user && validPassword) {
+                user.tokenVersion += 1
+                await user.save()
+
                 const jwtSecret = process.env.JWT_ACCESS_KEY || 'your-secret-key-here'
                 const accessToken = jwt.sign({
                     id: user.id,
-                    admin: user.admin
+                    admin: user.admin,
+                    tokenVersion: user.tokenVersion
                 },
                     jwtSecret,
                     {
-                        expiresIn: '30h'
+                        expiresIn: '30m'
                     }
                 )
-                const {password, ...others} = user._doc
+                res.cookie("accessToken", accessToken, {
+                    httpOnly: true,
+                    secure: false,      // bật nếu dùng HTTPS
+                    sameSite: "strict" // chống CSRF
+                })
+                const { password, ...others } = user._doc
 
-                return res.status(200).json({...others, accessToken})
+                return res.status(200).json({ ...others })
             }
         } catch (err) {
             return res.status(500).json(err);
         }
+    },
+    logoutUser: async (req, res) => {
+        res.clearCookie("accessToken", {
+            httpOnly: true,
+            secure: false,      // bật nếu dùng HTTPS
+            sameSite: "strict"  // chống CSRF
+        });
+        return res.status(200).json({ message: "Logged out successfully" })
     }
 
 }

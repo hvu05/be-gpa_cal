@@ -28,8 +28,9 @@ const userController = {
         }
     },
     putInfoUser: async(req, res) => {
-        const {username, email} = req.body
-        const user = await updateInfoUserService(req.user.id, {username, email})
+        const {username, fullname} = req.body
+        const user = await updateInfoUserService(req.user.id, {fullname, username})
+        console.log('change be', fullname)
         if(user)
         {
             return res.status(200).json(

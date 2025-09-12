@@ -21,7 +21,8 @@ routerOtp.post('/verify-otp', (req, res) => {
   const { email, otp } = req.body
   console.log('>>> check email, otp:', email, otp)
   if (verifyOTP(email, otp)) {
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '1h' })
+    const jwtSecret = process.env.JWT_ACCESS_KEY || 'your-access-key-here'
+    const token = jwt.sign({ email }, jwtSecret, { expiresIn: '1h' })
     res.json({ EC: 0, msg: 'success', token })
   } else {
     res.status(400).json({ EC: 1, msg: 'OTP sai hoặc đã hết hạn' })

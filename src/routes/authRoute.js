@@ -19,6 +19,7 @@ passport.use(
             try {
                 // Kiểm tra user đã tồn tại chưa
                 let user = await User.findOne({ googleId: profile.id });
+                console.log(1.1)
 
                 if (!user) {
                     // Tạo user mới nếu chưa tồn tại
@@ -44,7 +45,37 @@ router.get('/google', passport.authenticate('google', { scope: ['profile', 'emai
 router.get(
     '/google/callback',
     passport.authenticate('google', { session: false, failureRedirect: '/' }),
-    (req, res) => { res.json({ EC: 0, msg: 'OK', user: req.user }); }
+    async(req, res) => {
+        try {
+            // Tạo JWT token
+            // console.log('req', req)
+            const user = await User.findOne({ email: req.user.email })
+            const jwtSecret = process.env.JWT_ACCESS_KEY || 'your-secret-key-here'
+            const accessToken = jwt.sign({
+                id: req.user.id,
+                admin: req.user.admin,
+                tokenVersion: user.tokenVersion
+            },
+                jwtSecret,
+                {
+                    expiresIn: '30m'
+                }
+            )
+            // Trả về user và token
+            const { password, ...userWithoutPassword } = req.user._doc
+            
+            res.cookie("accessToken", accessToken, {
+                httpOnly: true,
+                secure: false,      // bật nếu dùng HTTPS
+                sameSite: "strict" // chống CSRF
+            })
+            const redirectUrl = `${process.env.FE_URL}/dashboard`
+            // Redirect về FE cùng với token
+            res.redirect(redirectUrl)
+        } catch (error) {
+            res.redirect(`${process.env.FE_URL}/error`)
+        }
+    }
 );
 
 module.exports = router

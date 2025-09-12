@@ -6,14 +6,15 @@ const routeAPI = express.Router()
 
 // Authentication
 routeAPI.post('/auth', authController.registerUser)
-routeAPI.get('/auth', authController.loginUser)
+routeAPI.post('/auth/login', authController.loginUser)
+routeAPI.post('/auth/logout', authController.logoutUser)
 
 //get INFO of User
 routeAPI.get('/user', middlewareController.verifyToken, userController.getInfoUser)
 routeAPI.put('/user', middlewareController.verifyToken, userController.putInfoUser)
 
 // reset password
-routeAPI.put('/user-password', userController.putResetPasswordUser)
+routeAPI.put('/reset-password', middlewareController.verifyToken, userController.putResetPasswordUser)
 
 // PUT subscribe
 routeAPI.put('/user/subscribe', middlewareController.verifyToken, userController.postSubscribe)

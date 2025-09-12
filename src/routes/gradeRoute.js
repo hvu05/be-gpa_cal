@@ -9,6 +9,7 @@ const check_expired = middlewareController.checkAccountExpiration
 routeGrade.post('/',check_token, check_expired, gradeController.crateGradeController)
 routeGrade.put('/',check_token, check_expired, gradeController.updateGradeController)
 routeGrade.get('/', check_token, gradeController.getAllGradeController)
+routeGrade.delete('/:id', check_token, check_expired, gradeController.deleteGradeController)
 
 
 module.exports = routeGrade

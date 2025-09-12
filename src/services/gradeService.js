@@ -45,7 +45,7 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
         // Tính GPA tổng thể
         let totalGradePoints = 0
         let totalCredits = 0
-        
+        let totalSubject = 0
         // Tính GPA theo từng semester
         const semesterGPA = {}
         
@@ -56,7 +56,7 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
             // Tính tổng điểm và tín chỉ tổng thể
             totalGradePoints += grade4 * credit
             totalCredits += credit
-            
+            totalSubject += 1
             // Tính GPA theo semester
             const semesterName = grade.semesterId.semesterName
             if (!semesterGPA[semesterName]) {
@@ -70,7 +70,7 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
         })
         
         // Tính GPA tổng thể
-        const overallGPA = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(2) : 0
+        const overallGPA = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(3) : 0
         
         // Tính GPA cho từng semester
         Object.keys(semesterGPA).forEach(semester => {
@@ -84,11 +84,44 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
             grade.semesterGPA = parseFloat(semesterGPA[semesterName].gpa)
         })
         
+        // Gom nhóm grades theo semester
+        const gradesBySemester = grades.reduce((acc, grade) => {
+            const semesterName = grade.semesterId.semesterName
+            if (!acc[semesterName]) {
+                acc[semesterName] = {
+                    semesterName: semesterName,
+                    semesterId: grade.semesterId._id,
+                    subjects: [],
+                    gpa: parseFloat(semesterGPA[semesterName].gpa),
+                    totalCredits: semesterGPA[semesterName].totalCredits,
+                    totalGradePoints: semesterGPA[semesterName].totalGradePoints
+                }
+            }
+            acc[semesterName].subjects.push({
+                _id: grade._id,
+                subjectId: grade.subjectId,
+                grade10: grade.grade10,
+                grade4: grade.grade4,
+                gradeChar: grade.gradeChar,
+                createdAt: grade.createdAt,
+                updatedAt: grade.updatedAt
+            })
+            return acc
+        }, {})
+        
+        // Chuyển đổi thành mảng và sắp xếp theo tên semester
+        const semesterArray = Object.values(gradesBySemester).sort((a, b) => 
+            a.semesterName.localeCompare(b.semesterName)
+        )
+        
         // Thêm thông tin GPA tổng thể
         const result = {
-            grades: grades,
+            grades: grades, // Giữ nguyên format cũ để tương thích
+            gradesBySemester: semesterArray, // Format mới gom nhóm theo semester
             overallGPA: parseFloat(overallGPA),
-            semesterGPA: semesterGPA
+            semesterGPA: semesterGPA,
+            totalCredit: totalCredits,
+            totalSubject: totalSubject
         }
 
         return result
@@ -98,19 +131,30 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
     }
 }
 
-const updateGradeService = async (_id, grade4) => {
+const updateGradeService = async (_id, grade4, grade10) => {
     try {
-        const gradeChar = gradeMap.get(grade4)
-        console.log(_id, gradeChar)
-        const result = await Grade.findByIdAndUpdate(_id, {grade4, gradeChar}, {new: true})
+        const gradeChar = gradeMap.get(Number(grade4))
+        console.log('>>>check id', _id, gradeChar)
+        const result = await Grade.findByIdAndUpdate(_id, {grade4, grade10, gradeChar}, {new: true})
         return result
     } catch (e) {
         console.log('error at update grade', e)
         return null
     }
 }
+
+const deleteGradeService = async (_id) => {
+    try {
+        const result = await Grade.findByIdAndDelete(_id)
+        return result
+    } catch (e) {
+        console.log('error at delete grade', e)
+        return null
+    }
+}
 module.exports = {
     createGradeService,
     getAllSubjectAndGradeOfUserService,
-    updateGradeService
+    updateGradeService,
+    deleteGradeService
 }

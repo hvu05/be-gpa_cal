@@ -4,6 +4,10 @@ const semesterSchema = new mongoose.Schema({
     semesterName: {
         type: String,
         require: true
+    },
+    userId: {
+        type: String,
+        require: true
     }
 }, { timestamps: true })
 

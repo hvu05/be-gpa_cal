@@ -1,6 +1,7 @@
 const { createGradeService,
     getAllSubjectAndGradeOfUserService,
-    updateGradeService } = require("../services/gradeService")
+    updateGradeService,
+    deleteGradeService } = require("../services/gradeService")
 
 const gradeController = {
     crateGradeController: async (req, res) => {
@@ -42,9 +43,8 @@ const gradeController = {
         }
     },
     updateGradeController: async (req, res) => {
-        const { _id, grade4 } = req.body
-        console.log('>>>check id 4', _id, grade4)
-        const grade = await updateGradeService(_id, grade4)
+        const { _id, grade4, grade10 } = req.body
+        const grade = await updateGradeService(_id, grade4, grade10)
         if (grade) {
             return res.status(200).json(
                 {
@@ -58,6 +58,27 @@ const gradeController = {
                 {
                     EC: -1,
                     message: 'Get all grade failed'
+                }
+            )
+        }
+    },
+    deleteGradeController: async (req, res) => {
+        const _id = req.params.id
+        const grade = await deleteGradeService(_id)
+        if (grade) {
+            return res.status(200).json(
+                {
+                    EC: 0,
+                    data: grade,
+                    message: 'Grade deleted successfully'
+                }
+            )
+        }
+        else {
+            return res.status(500).json(
+                {
+                    EC: -1,
+                    message: 'Delete grade failed'
                 }
             )
         }

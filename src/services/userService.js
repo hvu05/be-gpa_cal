@@ -14,7 +14,10 @@ const updateInfoUserService = async (_id, dataUpdate) => {
     try {
         const result = await User.findByIdAndUpdate(
             _id,
-            { ...dataUpdate }, // dữ liệu muốn update
+            { 
+                fullname: dataUpdate.fullname,
+                username: dataUpdate.username
+             }, // dữ liệu muốn update
             { new: true }      // trả về document sau khi update
         )
         return result

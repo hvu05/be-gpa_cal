@@ -1,13 +1,21 @@
 const mongoose = require('mongoose')
 
 const userSchema = new mongoose.Schema({
+    fullname: {
+        type: String,
+        required: true,
+        minlength: 2,
+        maxlength: 20,
+        unique: false,
+        default: 'Default'
+    },
     username: {
         type: String,
         required: function () {
             // Chỉ yêu cầu username nếu không phải Google login
             return this.loginMethod !== 'google';
         },
-        minlength: 6,
+        minlength: 2,
         maxlength: 20,
         unique: true,
     },
@@ -22,7 +30,7 @@ const userSchema = new mongoose.Schema({
         type: String,
         required: function () {
             // Chỉ yêu cầu password nếu không phải Google login
-            return this.loginMethod !== 'google';
+            return this.loginMethod !== 'google'
         },
         minlength: 6,
     },
@@ -34,7 +42,7 @@ const userSchema = new mongoose.Schema({
     },
     loginMethod: {
         type: String,
-        enum: ['local', 'google'],
+        enum: ['local', 'google', 'username'],
         default: 'local'
     },
     admin: {
@@ -48,6 +56,10 @@ const userSchema = new mongoose.Schema({
     isPurchased: {
         type: Boolean,
         default: false
+    },
+    tokenVersion: {
+        type: Number,
+        default: 0
     }
 },
     { timestamps: true }
