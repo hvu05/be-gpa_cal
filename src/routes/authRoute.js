@@ -19,7 +19,7 @@ passport.use(
             try {
                 // Kiểm tra user đã tồn tại chưa
                 let user = await User.findOne({ googleId: profile.id });
-                console.log(1.1)
+                // console.log(1.1)
 
                 if (!user) {
                     // Tạo user mới nếu chưa tồn tại
@@ -41,41 +41,57 @@ passport.use(
     )
 )
 
-router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+router.get('/google',
+  (req, res, next) => {
+    // Lưu mode (signup/login) vào session hoặc query
+    req.session = req.session || {}
+    req.session.mode = req.query.mode
+    next()
+  },
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+)
+
 router.get(
-    '/google/callback',
-    passport.authenticate('google', { session: false, failureRedirect: '/' }),
-    async(req, res) => {
-        try {
-            // Tạo JWT token
-            // console.log('req', req)
-            const user = await User.findOne({ email: req.user.email })
-            const jwtSecret = process.env.JWT_ACCESS_KEY || 'your-secret-key-here'
-            const accessToken = jwt.sign({
-                id: req.user.id,
-                admin: req.user.admin,
-                tokenVersion: user.tokenVersion
-            },
-                jwtSecret,
-                {
-                    expiresIn: '30m'
-                }
-            )
-            // Trả về user và token
-            const { password, ...userWithoutPassword } = req.user._doc
-            
-            res.cookie("accessToken", accessToken, {
-                httpOnly: true,
-                secure: true,      // bật nếu dùng HTTPS
-                sameSite: "None" // chống CSRF
-            })
-            const redirectUrl = `${process.env.FE_URL}/dashboard`
-            // Redirect về FE cùng với token
-            res.redirect(redirectUrl)
-        } catch (error) {
-            res.redirect(`${process.env.FE_URL}/error`)
-        }
+  '/google/callback',
+  passport.authenticate('google', { session: false, failureRedirect: '/' }),
+  async (req, res) => {
+    try {
+      const mode = req.session?.mode
+      const user = await User.findOne({ email: req.user.email })
+
+      // Xử lý theo mode
+      if (mode === 'signup' && user) {
+        return res.redirect(`${process.env.FE_URL}/error?msg=account_exists`)
+      }
+
+      if (mode === 'login' && !user) {
+        return res.redirect(`${process.env.FE_URL}/error?msg=account_not_found`)
+      }
+
+      // Tạo JWT
+      const jwtSecret = process.env.JWT_ACCESS_KEY || 'your-secret-key-here'
+      const accessToken = jwt.sign(
+        {
+          id: req.user.id,
+          admin: req.user.admin,
+          tokenVersion: user.tokenVersion
+        },
+        jwtSecret,
+        { expiresIn: '30m' }
+      )
+
+      res.cookie("accessToken", accessToken, {
+        httpOnly: true,
+        secure: true,
+        sameSite: "None"
+      })
+
+      res.redirect(`${process.env.FE_URL}/dashboard`)
+    } catch (error) {
+      res.redirect(`${process.env.FE_URL}/error?msg=server_error`)
     }
-);
+  }
+)
+
 
 module.exports = router
