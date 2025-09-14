@@ -78,8 +78,8 @@ const authController = {
                 )
                 res.cookie("accessToken", accessToken, {
                     httpOnly: true,
-                    secure: false,      // bật nếu dùng HTTPS
-                    sameSite: "strict" // chống CSRF
+                    secure: true,      // bật nếu dùng HTTPS
+                    sameSite: "None" // chống CSRF
                 })
                 const { password, ...others } = user._doc
 
@@ -92,8 +92,8 @@ const authController = {
     logoutUser: async (req, res) => {
         res.clearCookie("accessToken", {
             httpOnly: true,
-            secure: false,      // bật nếu dùng HTTPS
-            sameSite: "strict"  // chống CSRF
+            secure: true,      // bật nếu dùng HTTPS
+            sameSite: "None"  // chống CSRF
         });
         return res.status(200).json({ message: "Logged out successfully" })
     }

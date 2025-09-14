@@ -66,8 +66,8 @@ router.get(
             
             res.cookie("accessToken", accessToken, {
                 httpOnly: true,
-                secure: false,      // bật nếu dùng HTTPS
-                sameSite: "strict" // chống CSRF
+                secure: true,      // bật nếu dùng HTTPS
+                sameSite: "None" // chống CSRF
             })
             const redirectUrl = `${process.env.FE_URL}/dashboard`
             // Redirect về FE cùng với token
