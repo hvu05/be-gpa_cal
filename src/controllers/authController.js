@@ -39,7 +39,7 @@ const authController = {
         try {
             const user = await User.findOne({ 
                 $or: [
-                    {username: req.body.usernameOrEmail},
+                    {username: req.body.usernameOrEmail },
                     {email: req.body.usernameOrEmail}
                 ]
              });

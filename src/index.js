@@ -28,11 +28,11 @@ const server = http.createServer(app)
 initSocket(server)
 
 // FOR GG LOGIN
-app.use(session({ secret: 'SECRET', resave: false, saveUninitialized: true }))
+app.use(session({ secret: process.env.SESSION_SECRET, resave: false, saveUninitialized: true }))
 app.use(passport.initialize())
 app.use(passport.session())
 // END
-mongoose.connect('mongodb://localhost:27017/')
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => {
     console.log('CONNECTED TO DB')
   })
@@ -62,6 +62,6 @@ app.use('/auth', authRoute)
 app.use('/otp', routerOtp)
 
 
-server.listen(8000, () => {
+server.listen(process.env.PORT, () => {
   console.log("Server is running")
 })
