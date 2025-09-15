@@ -1,4 +1,6 @@
 const Grade = require('../models/gradeModel')
+const Semester = require('../models/semesterModel')
+
 const gradeMap = new Map([
     [4.0, 'A'],
     [3.5, 'B+'],
@@ -137,7 +139,6 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
         console.log("error at get all Grade", e);
         return null;
     }
-
 }
 
 const updateGradeService = async (_id, grade4, grade10) => {
