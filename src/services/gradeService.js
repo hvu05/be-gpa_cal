@@ -23,7 +23,7 @@ const createGradeService = async (idUser, info) => {
     // Map từ thang điểm 4 sang điểm chữ
 
     const { subjectId, semesterId, grade10, grade4 } = info
-    const gradeChar = gradeMap.get(grade4)
+    const gradeChar = gradeMap.get(Number(grade4))
     try {
         const result = await Grade.create({
             userId: idUser,
