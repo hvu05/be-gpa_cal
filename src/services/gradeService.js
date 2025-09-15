@@ -1,14 +1,14 @@
 const Grade = require('../models/gradeModel')
 const gradeMap = new Map([
-        [4.0, 'A'],
-        [3.5, 'B+'],
-        [3.0, 'B'],
-        [2.5, 'C+'],
-        [2.0, 'C'],
-        [1.5, 'D+'],
-        [1.0, 'D'],
-        [0.0, 'F']
-    ])
+    [4.0, 'A'],
+    [3.5, 'B+'],
+    [3.0, 'B'],
+    [2.5, 'C+'],
+    [2.0, 'C'],
+    [1.5, 'D+'],
+    [1.0, 'D'],
+    [0.0, 'F']
+])
 const createGradeService = async (idUser, info) => {
     // params: info:
     /*
@@ -19,7 +19,7 @@ const createGradeService = async (idUser, info) => {
         gradeChar: 'B+'
     */
     // Map từ thang điểm 4 sang điểm chữ
-    
+
     const { subjectId, semesterId, grade10, grade4 } = info
     const gradeChar = gradeMap.get(grade4)
     try {
@@ -36,66 +36,66 @@ const createGradeService = async (idUser, info) => {
 
 const getAllSubjectAndGradeOfUserService = async (idUser) => {
     try {
+        // Lấy tất cả semester của user
+        const semesters = await Semester.find({ userId: idUser }).sort({ semesterName: 1 });
+
+        // Lấy tất cả grade của user
         const grades = await Grade.find({ userId: idUser })
-            .populate("subjectId", 'subjectName credit')
-            .populate('semesterId', 'semesterName')
-            
-        grades.sort((a, b) => a.semesterId.semesterName.localeCompare(b.semesterId.semesterName))
+            .populate("subjectId", "subjectName credit")
+            .populate("semesterId", "semesterName");
+
+        // Sắp xếp grade theo tên học kỳ
+        grades.sort((a, b) => a.semesterId.semesterName.localeCompare(b.semesterId.semesterName));
 
         // Tính GPA tổng thể
-        let totalGradePoints = 0
-        let totalCredits = 0
-        let totalSubject = 0
+        let totalGradePoints = 0;
+        let totalCredits = 0;
+        let totalSubject = 0;
+
         // Tính GPA theo từng semester
-        const semesterGPA = {}
-        
-        grades.forEach(grade => {
-            const credit = grade.subjectId.credit
-            const grade4 = grade.grade4
-            
-            // Tính tổng điểm và tín chỉ tổng thể
-            totalGradePoints += grade4 * credit
-            totalCredits += credit
-            totalSubject += 1
-            // Tính GPA theo semester
-            const semesterName = grade.semesterId.semesterName
+        const semesterGPA = {};
+
+        grades.forEach((grade) => {
+            const credit = grade.subjectId.credit;
+            const grade4 = grade.grade4;
+
+            totalGradePoints += grade4 * credit;
+            totalCredits += credit;
+            totalSubject += 1;
+
+            const semesterName = grade.semesterId.semesterName;
             if (!semesterGPA[semesterName]) {
                 semesterGPA[semesterName] = {
                     totalGradePoints: 0,
-                    totalCredits: 0
-                }
+                    totalCredits: 0,
+                };
             }
-            semesterGPA[semesterName].totalGradePoints += grade4 * credit
-            semesterGPA[semesterName].totalCredits += credit
-        })
-        
+            semesterGPA[semesterName].totalGradePoints += grade4 * credit;
+            semesterGPA[semesterName].totalCredits += credit;
+        });
+
         // Tính GPA tổng thể
-        const overallGPA = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(3) : 0
-        
+        const overallGPA = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(3) : 0;
+
         // Tính GPA cho từng semester
-        Object.keys(semesterGPA).forEach(semester => {
-            const { totalGradePoints, totalCredits } = semesterGPA[semester]
-            semesterGPA[semester].gpa = totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(2) : 0
-        })
-        
-        // Thêm GPA vào mỗi grade
-        grades.forEach(grade => {
-            const semesterName = grade.semesterId.semesterName
-            grade.semesterGPA = parseFloat(semesterGPA[semesterName].gpa)
-        })
-        
+        Object.keys(semesterGPA).forEach((semester) => {
+            const { totalGradePoints, totalCredits } = semesterGPA[semester];
+            semesterGPA[semester].gpa =
+                totalCredits > 0 ? (totalGradePoints / totalCredits).toFixed(2) : 0;
+        });
+
         // Gom nhóm grades theo semester
         const gradesBySemester = grades.reduce((acc, grade) => {
-            const semesterName = grade.semesterId.semesterName
+            const semesterName = grade.semesterId.semesterName;
             if (!acc[semesterName]) {
                 acc[semesterName] = {
                     semesterName: semesterName,
                     semesterId: grade.semesterId._id,
                     subjects: [],
-                    gpa: parseFloat(semesterGPA[semesterName].gpa),
-                    totalCredits: semesterGPA[semesterName].totalCredits,
-                    totalGradePoints: semesterGPA[semesterName].totalGradePoints
-                }
+                    gpa: parseFloat(semesterGPA[semesterName]?.gpa || 0),
+                    totalCredits: semesterGPA[semesterName]?.totalCredits || 0,
+                    totalGradePoints: semesterGPA[semesterName]?.totalGradePoints || 0,
+                };
             }
             acc[semesterName].subjects.push({
                 _id: grade._id,
@@ -104,38 +104,47 @@ const getAllSubjectAndGradeOfUserService = async (idUser) => {
                 grade4: grade.grade4,
                 gradeChar: grade.gradeChar,
                 createdAt: grade.createdAt,
-                updatedAt: grade.updatedAt
-            })
-            return acc
-        }, {})
-        
-        // Chuyển đổi thành mảng và sắp xếp theo tên semester
-        const semesterArray = Object.values(gradesBySemester).sort((a, b) => 
-            a.semesterName.localeCompare(b.semesterName)
-        )
-        
-        // Thêm thông tin GPA tổng thể
+                updatedAt: grade.updatedAt,
+            });
+            return acc;
+        }, {});
+
+        // Đảm bảo tất cả semester đều có trong kết quả
+        const semesterArray = semesters.map((sem) => {
+            return (
+                gradesBySemester[sem.semesterName] || {
+                    semesterName: sem.semesterName,
+                    semesterId: sem._id,
+                    subjects: [],
+                    gpa: 0,
+                    totalCredits: 0,
+                    totalGradePoints: 0,
+                }
+            );
+        });
+
         const result = {
-            grades: grades, // Giữ nguyên format cũ để tương thích
-            gradesBySemester: semesterArray, // Format mới gom nhóm theo semester
+            grades: grades, // giữ nguyên format cũ
+            gradesBySemester: semesterArray, // format mới gom nhóm theo semester
             overallGPA: parseFloat(overallGPA),
             semesterGPA: semesterGPA,
             totalCredit: totalCredits,
-            totalSubject: totalSubject
-        }
+            totalSubject: totalSubject,
+        };
 
-        return result
+        return result;
     } catch (e) {
-        console.log('error at get all Grade', e)
-        return null
+        console.log("error at get all Grade", e);
+        return null;
     }
+
 }
 
 const updateGradeService = async (_id, grade4, grade10) => {
     try {
         const gradeChar = gradeMap.get(Number(grade4))
         console.log('>>>check id', _id, gradeChar)
-        const result = await Grade.findByIdAndUpdate(_id, {grade4, grade10, gradeChar}, {new: true})
+        const result = await Grade.findByIdAndUpdate(_id, { grade4, grade10, gradeChar }, { new: true })
         return result
     } catch (e) {
         console.log('error at update grade', e)
